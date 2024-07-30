@@ -1,5 +1,5 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import cv2
 import keras
@@ -238,3 +238,32 @@ loss = SparseCategoricalCrossentropy(from_logits=False)
 metrics = ['accuracy',meaniou,iou_c0,iou_c1,iou_c2,iou_c3,iou_c4]
 # Compile with loss function
 model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+model.summary()
+
+# Dataset for train images
+train_dataset = Dataset(
+    x_train_dir,
+    y_train_dir,
+    classes=[]
+)
+
+# Dataset for validation images
+valid_dataset = Dataset(
+    x_valid_dir,
+    y_valid_dir,
+    classes=[]
+)
+
+train_dataloader = Dataloder(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+valid_dataloader = Dataloder(valid_dataset, batch_size=1, shuffle=False)
+
+# check shapes for errors
+assert train_dataloader[0][0].shape == (BATCH_SIZE, 256, 256, 1)
+assert train_dataloader[0][1].shape == (BATCH_SIZE, 256, 256, 1)
+
+# Train
+model.fit(train_dataloader,
+          validation_data = valid_dataloader,
+          epochs = 20,
+          callbacks = callbacks,
+          verbose = 1)
