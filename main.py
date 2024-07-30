@@ -121,7 +121,7 @@ class Dataset:
     def __len__(self):
         return len(self.ids)
 
-class Dataloder(keras.utils.Sequence):
+class DataLoader(keras.utils.Sequence):
     """Load data from dataset and form batches
 
     Args:
@@ -177,7 +177,7 @@ import segmentation_models as sm
 BACKBONE = 'resnet34'
 BATCH_SIZE = 32
 LR = 0.0001
-EPOCHS = 5
+EPOCHS = 40
 
 preprocess_input = sm.get_preprocessing(BACKBONE)
 
@@ -185,11 +185,12 @@ preprocess_input = sm.get_preprocessing(BACKBONE)
 n_classes = 5 
 activation = 'softmax'
 
-from keras.callbacks import CSVLogger
+from keras.callbacks import CSVLogger, ModelCheckpoint
 from keras.optimizers import Adam
 os.makedirs('results', exist_ok=True)
+checkpoint = ModelCheckpoint(os.path.join('results', f"unet_checkpoint_set_epochs{EPOCHS}.keras"), monitor='val_accuracy', verbose=0, save_best_only=True, mode='auto')
 logger = CSVLogger(os.path.join('results', f"unet_training_set_epochs{EPOCHS}.log"))
-callbacks = [logger]
+callbacks = [logger,checkpoint]
     # Optimizer
 optimizer = Adam(learning_rate = LR)
 #create model
@@ -254,8 +255,8 @@ valid_dataset = Dataset(
     classes=[]
 )
 
-train_dataloader = Dataloder(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-valid_dataloader = Dataloder(valid_dataset, batch_size=BATCH_SIZE//4, shuffle=False)
+train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+valid_dataloader = DataLoader(valid_dataset, batch_size=BATCH_SIZE//4, shuffle=False)
 
 # check shapes for errors
 assert train_dataloader[0][0].shape == (BATCH_SIZE, 256, 256, 1)
@@ -264,7 +265,7 @@ assert train_dataloader[0][1].shape == (BATCH_SIZE, 256, 256, 1)
 # Train
 model.fit(train_dataloader,
           validation_data = valid_dataloader,
-          epochs = 5,
+          epochs = EPOCHS,
           callbacks = callbacks,
           verbose = 1)
 
