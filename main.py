@@ -171,3 +171,70 @@ visualize(
     image=image,
     mask=mask
 )
+
+os.environ['SM_FRAMEWORK'] = 'tf.keras'
+import segmentation_models as sm
+BACKBONE = 'resnet34'
+BATCH_SIZE = 8
+LR = 0.0001
+EPOCHS = 5
+
+preprocess_input = sm.get_preprocessing(BACKBONE)
+
+# define network parameters
+n_classes = 5 
+activation = 'softmax'
+
+from keras.callbacks import CSVLogger
+from keras.optimizers import Adam
+os.makedirs('results', exist_ok=True)
+logger = CSVLogger(os.path.join('results', f"unet_training_set_epochs{EPOCHS}.log"))
+callbacks = [logger]
+    # Optimizer
+optimizer = Adam(learning_rate = LR)
+#create model
+model = sm.Unet(BACKBONE, input_shape=(None, None, 1), classes=n_classes, activation=activation, encoder_weights=None)
+
+import tensorflow as tf
+class UpdatedMeanIoU(keras.metrics.MeanIoU):
+  def __init__(self,
+               y_true=None,
+               y_pred=None,
+               num_classes=None,
+               name=None,
+               dtype=None):
+    super(UpdatedMeanIoU, self).__init__(num_classes = num_classes,name=name, dtype=dtype)
+
+  def update_state(self, y_true, y_pred, sample_weight=None):
+    y_pred = tf.math.argmax(y_pred, axis=-1)
+    return super().update_state(y_true, y_pred, sample_weight)
+
+import tensorflow as tf
+class UpdatedIoU(keras.metrics.IoU):
+  def __init__(self,
+               y_true=None,
+               y_pred=None,
+               num_classes=None,
+               target_class_ids=None,
+               name=None,
+               dtype=None):
+    super(UpdatedIoU, self).__init__(num_classes=num_classes, name=name, target_class_ids=target_class_ids, dtype=dtype)
+
+  def update_state(self, y_true, y_pred, sample_weight=None):
+    y_pred = tf.math.argmax(y_pred, axis=-1)
+    return super().update_state(y_true, y_pred, sample_weight)
+
+from keras.metrics import MeanIoU, IoU
+from keras.losses import SparseCategoricalCrossentropy
+
+meaniou = UpdatedMeanIoU(num_classes=5, name='mean_iou')
+iou_c0 = UpdatedIoU(num_classes=5, target_class_ids=[0], name='iou_class0')
+iou_c1 = UpdatedIoU(num_classes=5, target_class_ids=[1], name='iou_class1')
+iou_c2 = UpdatedIoU(num_classes=5, target_class_ids=[2], name='iou_class2')
+iou_c3 = UpdatedIoU(num_classes=5, target_class_ids=[3], name='iou_class3')
+iou_c4 = UpdatedIoU(num_classes=5, target_class_ids=[4], name='iou_class4')
+loss = SparseCategoricalCrossentropy(from_logits=False)
+#metrics = ['accuracy','precision','recall',meaniou,iou_c0,iou_c1]
+metrics = ['accuracy',meaniou,iou_c0,iou_c1,iou_c2,iou_c3,iou_c4]
+# Compile with loss function
+model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
