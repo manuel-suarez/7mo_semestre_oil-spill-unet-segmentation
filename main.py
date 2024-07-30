@@ -175,7 +175,7 @@ visualize(
 os.environ['SM_FRAMEWORK'] = 'tf.keras'
 import segmentation_models as sm
 BACKBONE = 'resnet34'
-BATCH_SIZE = 8
+BATCH_SIZE = 32
 LR = 0.0001
 EPOCHS = 5
 
@@ -255,7 +255,7 @@ valid_dataset = Dataset(
 )
 
 train_dataloader = Dataloder(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-valid_dataloader = Dataloder(valid_dataset, batch_size=1, shuffle=False)
+valid_dataloader = Dataloder(valid_dataset, batch_size=BATCH_SIZE//4, shuffle=False)
 
 # check shapes for errors
 assert train_dataloader[0][0].shape == (BATCH_SIZE, 256, 256, 1)
@@ -264,6 +264,14 @@ assert train_dataloader[0][1].shape == (BATCH_SIZE, 256, 256, 1)
 # Train
 model.fit(train_dataloader,
           validation_data = valid_dataloader,
-          epochs = 20,
+          epochs = 5,
           callbacks = callbacks,
           verbose = 1)
+
+test_dataset = Dataset(
+    x_test_dir,
+    y_test_dir,
+    classes=[]
+)
+test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE//8, shuffle=False)
+model.evaluate(test_dataloader)
