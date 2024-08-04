@@ -172,14 +172,14 @@ visualize(
     mask=mask
 )
 
-os.environ['SM_FRAMEWORK'] = 'tf.keras'
-import segmentation_models as sm
-BACKBONE = 'resnet34'
+# os.environ['SM_FRAMEWORK'] = 'tf.keras'
+# import segmentation_models as sm
+# BACKBONE = 'resnet34'
 BATCH_SIZE = 32
 LR = 0.0001
 EPOCHS = 40
 
-preprocess_input = sm.get_preprocessing(BACKBONE)
+# preprocess_input = sm.get_preprocessing(BACKBONE)
 
 # define network parameters
 n_classes = 5 
@@ -188,13 +188,17 @@ activation = 'softmax'
 from keras.callbacks import CSVLogger, ModelCheckpoint
 from keras.optimizers import Adam
 os.makedirs('results', exist_ok=True)
-checkpoint = ModelCheckpoint(os.path.join('results', f"unet_checkpoint_set_epochs{EPOCHS}.keras"), monitor='val_accuracy', verbose=0, save_best_only=True, mode='auto')
-logger = CSVLogger(os.path.join('results', f"unet_training_set_epochs{EPOCHS}.log"))
+checkpoint = ModelCheckpoint(os.path.join('results', f"unetv2_checkpoint_set_epochs{EPOCHS}.keras"), monitor='val_accuracy', verbose=0, save_best_only=True, mode='auto')
+logger = CSVLogger(os.path.join('results', f"unetv2_training_set_epochs{EPOCHS}.log"))
 callbacks = [logger,checkpoint]
     # Optimizer
 optimizer = Adam(learning_rate = LR)
 #create model
-model = sm.Unet(BACKBONE, input_shape=(None, None, 1), classes=n_classes, activation=activation, encoder_weights=None)
+#from models.unet_model_v1 import multi_unet_model
+from models.unet_model_v2 import build_unet
+#model = sm.Unet(BACKBONE, input_shape=(None, None, 1), classes=n_classes, activation=activation, encoder_weights=None)
+#model = multi_unet_model(n_classes=n_classes)
+model = build_unet(input_shape=(256,256,1), num_classes=5, activation='softmax')
 
 import tensorflow as tf
 class UpdatedMeanIoU(keras.metrics.MeanIoU):

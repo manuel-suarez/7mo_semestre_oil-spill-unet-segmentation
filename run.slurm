@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --partition=GPU
-#SBATCH --job-name=SM-UNet-OSD
+#SBATCH --job-name=SM-UNetv2-OSD
 #SBATCH --time=0
 #SBATCH --mem=0
 
